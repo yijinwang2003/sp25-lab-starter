@@ -69,36 +69,36 @@ int convolve(matrix_t *a_matrix, matrix_t *b_matrix, matrix_t **output_matrix) {
   /* DO NOT MODIFY ANYTHING ABOVE THIS LINE */
   
   // TODO: Optimize the convolution
-  #pragma ________________________
+  #pragma omp parallel for 
   for (int o_row = 0; o_row < output_rows; o_row++) {
     for (int o_col = 0; o_col < output_cols; o_col++) {
       int result = 0;
       for (int b_row = 0; b_row < b_matrix->rows; b_row++) {
 
-        vector vsum = _______________;
-        for (int b_col = 0; b_col < ________________; b_col += _____________) {
+        vector vsum = _mm256_setzero_si256();
+        for (int b_col = 0; b_col < b_matrix->cols - 7; b_col += 8) {
 
           // Compute the current index in both matrices
           int a_idx = (o_row + b_row) * a_matrix->cols + (o_col + b_col);
           int b_idx = b_row * b_matrix->cols + b_col;
 
-          vector a = vec_load(_____________________);
-          vector b = vec_load(_____________________);
+          vector a = vec_load((vector *)&a_matrix->data[a_idx]);
+          vector b = vec_load((vector *)&b_matrix->data[b_idx]);
           
-          vector mul = vec_mul(________, __________);
-          vsum = vec_add(vsum, ____________________);
+          vector mul = vec_mul(a, b);
+          vsum = vec_add(vsum, mul);
         }
 
         // reduce
         int sum = 0;
         int vresult[8];
-        vec_store(__________, __________);
+        vec_store((vector *)vresult, vsum);
         for (int i = 0; i < 8; i++) {
             sum += vresult[i];
         }
 
         // tail case
-        for (int b_col = ___________________; b_col < b_matrix->cols; b_col++) {
+        for (int b_col = b_matrix->cols - (b_matrix->cols % 8); b_col < b_matrix->cols; b_col++) {
           
           // Compute the current index in both matrices
           int a_idx = (o_row + b_row) * a_matrix->cols + (o_col + b_col);
@@ -109,7 +109,7 @@ int convolve(matrix_t *a_matrix, matrix_t *b_matrix, matrix_t **output_matrix) {
         result += sum 
       }
       int output_idx = o_row * output_cols + o_col;
-      (*output_matrix)->data[output_idx] = _____________;
+      (*output_matrix)->data[output_idx] = result;
     }
   }
   return 0;
