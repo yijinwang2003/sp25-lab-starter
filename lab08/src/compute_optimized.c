@@ -76,7 +76,8 @@ int convolve(matrix_t *a_matrix, matrix_t *b_matrix, matrix_t **output_matrix) {
       for (int b_row = 0; b_row < b_matrix->rows; b_row++) {
 
         vector vsum = _mm256_setzero_si256();
-        for (int b_col = 0; b_col < b_matrix->cols - 7; b_col += 8) {
+        int simd_end = b_matrix->cols - (b_matrix->cols % 8);
+        for (int b_col = 0; b_col < simd_end; b_col += 8) {
 
           // Compute the current index in both matrices
           int a_idx = (o_row + b_row) * a_matrix->cols + (o_col + b_col);
@@ -106,7 +107,7 @@ int convolve(matrix_t *a_matrix, matrix_t *b_matrix, matrix_t **output_matrix) {
 
           sum += a_matrix->data[a_idx] * b_matrix->data[b_idx];
         }
-        result += sum 
+        result += sum;
       }
       int output_idx = o_row * output_cols + o_col;
       (*output_matrix)->data[output_idx] = result;
