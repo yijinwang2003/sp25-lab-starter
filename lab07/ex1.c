@@ -55,6 +55,24 @@ long long int sum_simd(int vals[NUM_ELEMS]) {
         /* YOUR CODE GOES HERE */
 
         /* Hint: you'll need a tail case. */
+        __m128i sum_vec = _mm_setzero_si128();
+
+        unsigned int i;
+        for (i = 0; i <= NUM_ELEMS - 4; i += 4) {
+            __m128i vec = _mm_loadu_si128((__m128i*)(vals + i));
+            __m128i mask = _mm_cmpgt_epi32(vec, _127);
+            __m128i filtered = _mm_and_si128(vec, mask);
+            sum_vec = _mm_add_epi32(sum_vec, filtered);
+        }
+
+        int tmp[4];
+        _mm_storeu_si128((__m128i*)tmp, sum_vec);
+        result += (long long)tmp[0] + tmp[1] + tmp[2] + tmp[3];
+
+        // tail case
+        for (; i < NUM_ELEMS; i++) {
+            if (vals[i] >= 128) result += vals[i];
+        }
     }
 
     /* DO NOT MODIFY ANYTHING BELOW THIS LINE (in this function) */
@@ -74,6 +92,40 @@ long long int sum_simd_unrolled(int vals[NUM_ELEMS]) {
         /* Copy your sum_simd() implementation here, and unroll it */
 
         /* Hint: you'll need 1 or maybe 2 tail cases here. */
+        __m128i sum_vec = _mm_setzero_si128();
+
+        unsigned int i;
+        for (i = 0; i <= NUM_ELEMS - 16; i += 16) {
+            __m128i v0 = _mm_loadu_si128((__m128i*)(vals + i));
+            __m128i v1 = _mm_loadu_si128((__m128i*)(vals + i + 4));
+            __m128i v2 = _mm_loadu_si128((__m128i*)(vals + i + 8));
+            __m128i v3 = _mm_loadu_si128((__m128i*)(vals + i + 12));
+
+            __m128i m0 = _mm_cmpgt_epi32(v0, _127);
+            __m128i m1 = _mm_cmpgt_epi32(v1, _127);
+            __m128i m2 = _mm_cmpgt_epi32(v2, _127);
+            __m128i m3 = _mm_cmpgt_epi32(v3, _127);
+
+            sum_vec = _mm_add_epi32(sum_vec, _mm_and_si128(v0, m0));
+            sum_vec = _mm_add_epi32(sum_vec, _mm_and_si128(v1, m1));
+            sum_vec = _mm_add_epi32(sum_vec, _mm_and_si128(v2, m2));
+            sum_vec = _mm_add_epi32(sum_vec, _mm_and_si128(v3, m3));
+        }
+
+        for (; i <= NUM_ELEMS - 4; i += 4) {
+            __m128i vec = _mm_loadu_si128((__m128i*)(vals + i));
+            __m128i mask = _mm_cmpgt_epi32(vec, _127);
+            __m128i filtered = _mm_and_si128(vec, mask);
+            sum_vec = _mm_add_epi32(sum_vec, filtered);
+        }
+
+        int tmp[4];
+        _mm_storeu_si128((__m128i*)tmp, sum_vec);
+        result += (long long)tmp[0] + tmp[1] + tmp[2] + tmp[3];
+
+        for (; i < NUM_ELEMS; i++) {
+            if (vals[i] >= 128) result += vals[i];
+        }
     }
 
     /* DO NOT MODIFY ANYTHING BELOW THIS LINE (in this function) */
